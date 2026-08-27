@@ -1,1 +1,43 @@
+name: Test SmolLM2 135M
 
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install llama.cpp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git
+          cmake -S llama.cpp -B llama.cpp/build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_NATIVE=OFF
+          cmake --build llama.cpp/build \
+            --config Release \
+            --target llama-cli \
+            -j2
+
+      - name: Download SmolLM2 135M
+        run: |
+          mkdir -p models
+          curl -L --fail --retry 3 \
+            -o models/SmolLM2-135M-Instruct-Q4_K_M.gguf \
+            "https://huggingface.co/tensorblock/SmolLM2-135M-Instruct-GGUF/resolve/main/SmolLM2-135M-Instruct-Q4_K_M.gguf"
+
+      - name: Run SmolLM2
+        run: |
+          ./llama.cpp/build/bin/llama-cli \
+            -m models/SmolLM2-135M-Instruct-Q4_K_M.gguf \
+            -c 512 \
+            -n 100 \
+            -p "Write a short drama scene. A woman named Sphelele finds a mysterious envelope in her living room."

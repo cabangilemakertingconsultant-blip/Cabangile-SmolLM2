@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cabangile SmolLM2</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: white;
+    }
+
+    .container {
+      width: min(900px, 94%);
+      margin: 30px auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .header h1 {
+      margin-bottom: 8px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 20px;
+      background: #374151;
+      font-size: 14px;
+    }
+
+    .card {
+      background: #1f2937;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #4b5563;
+      background: #111827;
+      color: white;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 15px;
+      padding: 15px;
+      border: 0;
+      border-radius: 10px;
+      background: #2563eb;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    #response {
+      white-space: pre-wrap;
+      min-height: 180px;
+      padding: 15px;
+      border-radius: 10px;
+      background: #111827;
+      border: 1px solid #374151;
+      line-height: 1.6;
+    }
+
+    .model-info {
+      font-size: 14px;
+      color: #9ca3af;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <h1>🧠 Cabangile SmolLM2</h1>
+      <div class="status" id="status">
+        ● SmolLM2 test interface
+      </div>
+    </div>
+
+    <div class="card">
+
+      <label for="prompt">Prompt</label>
+
+      <textarea id="prompt">Write a short drama scene about Sphelele finding a mysterious envelope in her living room.</textarea>
+
+      <button id="generateBtn">
+        🤖 Generate with SmolLM2
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <h2>AI Response</h2>
+
+      <div id="response">
+        SmolLM2's response will appear here...
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Model</h2>
+
+      <div class="model-info">
+        Model: SmolLM2 135M Instruct<br>
+        Format: GGUF<br>
+        API key: None<br>
+        Gemini: Not used<br>
+        Internet AI API: Not required by the model itself
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const button = document.getElementById("generateBtn");
+    const prompt = document.getElementById("prompt");
+    const response = document.getElementById("response");
+    const status = document.getElementById("status");
+
+    button.addEventListener("click", async () => {
+
+      const text = prompt.value.trim();
+
+      if (!text) {
+        response.textContent = "Enter a prompt first.";
+        return;
+      }
+
+      button.disabled = true;
+      response.textContent = "Loading SmolLM2...";
+
+      status.textContent = "● Preparing local model...";
+
+      try {
+
+        /*
+          IMPORTANT:
+          This is the frontend interface.
+
+          The actual SmolLM2 inference engine will be connected
+          here next. We deliberately don't use Gemini or another
+          paid API.
+        */
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        response.textContent =
+          "Frontend ready.\n\n" +
+          "SmolLM2 inference engine is not connected yet.\n\n" +
+          "Next step: connect the 135M model to this interface.";
+
+        status.textContent = "● Frontend ready";
+
+      } catch (error) {
+
+        response.textContent =
+          "Error: " + error.message;
+
+        status.textContent = "● Error";
+
+      } finally {
+
+        button.disabled = false;
+
+      }
+
+    });
+  </script>
+
+</body>
+</html>

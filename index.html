@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Cabangile SmolLM2</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      width: min(900px, 94%);
+      margin: 25px auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    header h1 {
+      margin-bottom: 8px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 20px;
+      background: #334155;
+      font-size: 14px;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 170px;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #020617;
+      color: white;
+      font-size: 16px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 15px;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      background: #2563eb;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #response {
+      min-height: 230px;
+      padding: 15px;
+      border-radius: 10px;
+      background: #020617;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    #log {
+      max-height: 350px;
+      overflow-y: auto;
+      padding: 15px;
+      border-radius: 10px;
+      background: #020617;
+      color: #94a3b8;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .info {
+      color: #94a3b8;
+      line-height: 1.8;
+    }
+
+    .success {
+      color: #4ade80;
+    }
+
+    .error {
+      color: #f87171;
+    }
+
+    .warning {
+      color: #facc15;
+    }
+
+    .blue {
+      color: #60a5fa;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <header>
+
+    <h1>🧠 Cabangile SmolLM2</h1>
+
+    <div
+      class="status"
+      id="status"
+    >
+      ● Starting...
+    </div>
+
+  </header>
+
+
+  <div class="card">
+
+    <h2>🎭 Drama AI</h2>
+
+    <textarea id="prompt">Write a short drama scene about Sphelele finding a mysterious envelope in her living room.
+
+Include:
+- Setting
+- Characters
+- Actions
+- Dialogue
+- Emotion
+- Camera direction</textarea>
+
+    <button
+      id="generate"
+      disabled
+    >
+      🤖 Generate with SmolLM2
+    </button>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>🤖 AI Response</h2>
+
+    <div id="response">
+      Preparing SmolLM2...
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>📊 Status</h2>
+
+    <div id="progress">
+      Starting...
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>🔎 Diagnostic Log</h2>
+
+    <div id="log">
+      Starting diagnostic...
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>🧠 Model Information</h2>
+
+    <div class="info">
+
+      Model:
+      onnx-community/SmolLM2-135M-Instruct-ONNX-GQA
+      <br>
+
+      Original model:
+      SmolLM2 135M Instruct
+      <br>
+
+      Runtime:
+      Transformers.js
+      <br>
+
+      Browser model:
+      ONNX
+      <br>
+
+      Quantization:
+      Q4
+      <br>
+
+      API key:
+      ❌ None
+      <br>
+
+      Gemini:
+      ❌ Not used
+      <br>
+
+      Inference API:
+      ❌ None
+      <br>
+
+      Model server:
+      ❌ None
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script type="module">
+
+  /*
+   * Transformers.js
+   */
+
+  import {
+    pipeline,
+    env
+  } from
+  "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm";
+
+
+  /*
+   * UI
+   */
+
+  const status =
+    document.getElementById("status");
+
+  const progress =
+    document.getElementById("progress");
+
+  const response =
+    document.getElementById("response");
+
+  const log =
+    document.getElementById("log");
+
+  const button =
+    document.getElementById("generate");
+
+  const prompt =
+    document.getElementById("prompt");
+
+
+  /*
+   * Model
+   */
+
+  const MODEL =
+    "onnx-community/SmolLM2-135M-Instruct-ONNX-GQA";
+
+
+  let generator = null;
+
+  let currentDevice = null;
+
+
+  /*
+   * Logging
+   */
+
+  function writeLog(message) {
+
+    const time =
+      new Date().toLocaleTimeString();
+
+    log.textContent +=
+      "\n[" +
+      time +
+      "] " +
+      message;
+
+    log.scrollTop =
+      log.scrollHeight;
+
+    console.log(message);
+  }
+
+
+  /*
+   * Status
+   */
+
+  function setStatus(text) {
+
+    status.textContent = text;
+
+  }
+
+
+  /*
+   * Browser information
+   */
+
+  function inspectBrowser() {
+
+    writeLog(
+      "Browser: " +
+      navigator.userAgent
+    );
+
+    writeLog(
+      "Platform: " +
+      navigator.platform
+    );
+
+    writeLog(
+      "Online: " +
+      navigator.onLine
+    );
+
+    writeLog(
+      "HTTPS: " +
+      (
+        location.protocol === "https:"
+      )
+    );
+
+    writeLog(
+      "WebGPU API: " +
+      (
+        "gpu" in navigator
+      )
+    );
+
+  }
+
+
+  /*
+   * Load model
+   */
+
+  async function loadModel() {
+
+    try {
+
+      inspectBrowser();
+
+
+      writeLog(
+        "Transformers.js loaded."
+      );
+
+
+      writeLog(
+        "Model: " +
+        MODEL
+      );
+
+
+      writeLog(
+        "Starting model initialization..."
+      );
+
+
+      setStatus(
+        "● Loading SmolLM2..."
+      );
+
+
+      progress.innerHTML =
+        '<span class="warning">' +
+        "Downloading the browser model..." +
+        "</span>";
+
+
+      response.textContent =
+        "Loading SmolLM2 135M...\n\n" +
+        "The Q4 ONNX model is being downloaded " +
+        "and initialized.";
+
+
+      /*
+       * First attempt:
+       *
+       * WebGPU + Q4
+       */
+
+      if (
+        "gpu" in navigator
+      ) {
+
+        writeLog(
+          "WebGPU detected."
+        );
+
+        writeLog(
+          "Trying WebGPU + Q4..."
+        );
+
+        try {
+
+          generator =
+            await pipeline(
+              "text-generation",
+              MODEL,
+              {
+                device: "webgpu",
+                dtype: "q4"
+              }
+            );
+
+
+          currentDevice =
+            "WebGPU";
+
+
+          writeLog(
+            "WebGPU model loaded."
+          );
+
+
+        } catch (webgpuError) {
+
+          writeLog(
+            "WebGPU failed."
+          );
+
+          writeLog(
+            "WebGPU error: " +
+            (
+              webgpuError.message ||
+              String(webgpuError)
+            )
+          );
+
+
+          /*
+           * Second attempt:
+           *
+           * WASM + Q4
+           */
+
+          writeLog(
+            "Trying WASM + Q4..."
+          );
+
+
+          env.backends.onnx.wasm.numThreads =
+            1;
+
+
+          generator =
+            await pipeline(
+              "text-generation",
+              MODEL,
+              {
+                device: "wasm",
+                dtype: "q4"
+              }
+            );
+
+
+          currentDevice =
+            "WASM";
+
+        }
+
+      } else {
+
+        /*
+         * No WebGPU.
+         *
+         * Use WASM.
+         */
+
+        writeLog(
+          "WebGPU not detected."
+        );
+
+
+        writeLog(
+          "Using WASM + Q4..."
+        );
+
+
+        env.backends.onnx.wasm.numThreads =
+          1;
+
+
+        generator =
+          await pipeline(
+            "text-generation",
+            MODEL,
+            {
+              device: "wasm",
+              dtype: "q4"
+            }
+          );
+
+
+        currentDevice =
+          "WASM";
+
+      }
+
+
+      /*
+       * Success
+       */
+
+      writeLog(
+        "MODEL LOADED SUCCESSFULLY."
+      );
+
+
+      writeLog(
+        "Inference device: " +
+        currentDevice
+      );
+
+
+      setStatus(
+        "● SmolLM2 READY"
+      );
+
+
+      progress.innerHTML =
+        '<span class="success">' +
+        "SmolLM2 loaded successfully." +
+        "<br>" +
+        "Device: " +
+        currentDevice +
+        "</span>";
+
+
+      response.textContent =
+        "✅ SmolLM2 135M is ready.\n\n" +
+        "Device: " +
+        currentDevice +
+        "\n\n" +
+        "Press Generate.";
+
+      button.disabled =
+        false;
+
+
+    } catch (error) {
+
+      console.error(
+        "SMOLLM2 ERROR",
+        error
+      );
+
+
+      setStatus(
+        "● MODEL ERROR"
+      );
+
+
+      progress.innerHTML =
+        '<span class="error">' +
+        "SmolLM2 failed to load." +
+        "</span>";
+
+
+      response.textContent =
+        "❌ SMOLLM2 FAILED\n\n" +
+
+        "Error name:\n" +
+        (
+          error.name ||
+          "Unknown"
+        ) +
+
+        "\n\n" +
+
+        "Error message:\n" +
+        (
+          error.message ||
+          String(error)
+        ) +
+
+        "\n\n" +
+
+        "Check Diagnostic Log.";
+
+      writeLog(
+        "ERROR NAME: " +
+        (
+          error.name ||
+          "Unknown"
+        )
+      );
+
+
+      writeLog(
+        "ERROR MESSAGE: " +
+        (
+          error.message ||
+          String(error)
+        )
+      );
+
+
+      if (error.stack) {
+
+        writeLog(
+          "STACK:\n" +
+          error.stack
+        );
+
+      }
+
+
+      button.disabled =
+        true;
+
+    }
+
+  }
+
+
+  /*
+   * Generate
+   */
+
+  async function generateDrama() {
+
+    if (!generator) {
+
+      response.textContent =
+        "SmolLM2 is not ready.";
+
+      return;
+
+    }
+
+
+    const userPrompt =
+      prompt.value.trim();
+
+
+    if (!userPrompt) {
+
+      response.textContent =
+        "Please enter a prompt.";
+
+      return;
+
+    }
+
+
+    button.disabled =
+      true;
+
+
+    setStatus(
+      "● GENERATING..."
+    );
+
+
+    progress.innerHTML =
+      '<span class="blue">' +
+      "SmolLM2 is generating..." +
+      "</span>";
+
+
+    response.textContent =
+      "🧠 SmolLM2 is thinking...\n";
+
+
+    writeLog(
+      "Starting generation..."
+    );
+
+
+    try {
+
+      const messages = [
+
+        {
+          role: "system",
+
+          content:
+            "You are Cabangile Drama AI. " +
+            "Create realistic short drama scenes. " +
+            "Include setting, characters, " +
+            "actions, emotion, dialogue, " +
+            "and camera direction."
+        },
+
+        {
+          role: "user",
+
+          content:
+            userPrompt
+        }
+
+      ];
+
+
+      const output =
+        await generator(
+          messages,
+          {
+            max_new_tokens: 180,
+            temperature: 0.7,
+            do_sample: true
+          }
+        );
+
+
+      writeLog(
+        "Generation completed."
+      );
+
+
+      let result =
+        output?.[0]?.generated_text;
+
+
+      if (
+        Array.isArray(result)
+      ) {
+
+        const last =
+          result[
+            result.length - 1
+          ];
+
+
+        result =
+          last?.content ||
+          JSON.stringify(
+            result,
+            null,
+            2
+          );
+
+      }
+
+
+      response.textContent =
+        result ||
+        JSON.stringify(
+          output,
+          null,
+          2
+        );
+
+
+      setStatus(
+        "● SmolLM2 READY"
+      );
+
+
+      progress.innerHTML =
+        '<span class="success">' +
+        "Generation completed." +
+        "<br>" +
+        "Device: " +
+        currentDevice +
+        "</span>";
+
+
+    } catch (error) {
+
+      console.error(
+        "GENERATION ERROR",
+        error
+      );
+
+
+      setStatus(
+        "● GENERATION ERROR"
+      );
+
+
+      response.textContent =
+        "❌ GENERATION ERROR\n\n" +
+        (
+          error.message ||
+          String(error)
+        );
+
+
+      writeLog(
+        "GENERATION ERROR: " +
+        (
+          error.message ||
+          String(error)
+        )
+      );
+
+    }
+
+
+    button.disabled =
+      false;
+
+  }
+
+
+  /*
+   * Button
+   */
+
+  button.addEventListener(
+    "click",
+    generateDrama
+  );
+
+
+  /*
+   * Start
+   */
+
+  loadModel();
+
+</script>
+
+</body>
+</html>
+
+What this version fixes
+
+We're now pointing at the actual browser-ready ONNX repository:
+
+"onnx-community/SmolLM2-135M-Instruct-ONNX-GQA"
+
+rather than asking Transformers.js to interpret the original model repository. The model's own documentation specifically shows this repository being used with Transformers.js.
+
+It also has a Q4 ONNX model around 118 MB, which is appropriate for this experiment.
+
+The page will now try:
+
+1. WebGPU + Q4
+
+If that fails:
+
+2. WASM + Q4
+
+So you should see the actual route in Diagnostic Log.
+
+After saving
+
+Commit "index.html", wait for GitHub Pages to deploy, then refresh the page.
+
+This time, don't wait indefinitely.
+
+Give it about 5 minutes.
+
+If it says:
+
+«"● SmolLM2 READY"»
+
+🎉 we have real SmolLM2 running in the browser.
+
+If it says:
+
+«"● MODEL ERROR"»
+
+send me the Diagnostic Log, especially the lines beginning with:
+
+WebGPU
+Trying
+error
+MODEL
+
+and we'll fix the exact failure.
